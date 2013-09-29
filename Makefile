@@ -3,7 +3,7 @@ SRCDIR=src
 APPNAME=app.bin
 
 CC=g++
-CFLAGS+=-g -c -Wall `pkg-config opencv --cflags`
+CFLAGS+=-g -Wall `pkg-config opencv --cflags`
 LFLAGS+=`pkg-config opencv --libs`
 
 ifdef REL
@@ -25,8 +25,11 @@ all: $(OBJS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cc
 	@test -d $(OBJDIR) || mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) $< -o $@
-	$(CC) -MM $(CFLAGS) $^ > $(OBJDIR)/$*.d
+	$(CC) $(CFLAGS) $(SRCDIR)/$*.cc -c -o $@
+	$(CC) -MM $(CFLAGS) $(SRCDIR)/$*.cc > $(OBJDIR)/$*.d
+	@mv -f $(OBJDIR)/$*.d $(OBJDIR)/$*.d.tmp
+	@sed -e 's,.*:,$(OBJDIR)/$*.o:,' < $(OBJDIR)/$*.d.tmp > $(OBJDIR)/$*.d
+	@rm -f $(OBJDIR)/$*.d.tmp
 
 clean:
 	rm -rf $(OBJDIR)
