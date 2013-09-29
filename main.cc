@@ -23,7 +23,7 @@ int main()
     Mat frame;
     vc >> frame;
     imshow("input", frame);
-    int key = waitKey(40);
+    waitKey(40);
   }
 
   return 0;

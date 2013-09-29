@@ -10,5 +10,6 @@ GlyphValidator::~GlyphValidator()
 
 bool GlyphValidator::Validate()
 {
+  return false;
 }
 
