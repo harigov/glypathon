@@ -10,9 +10,9 @@ using namespace std;
 
 int main()
 {
-  VideoCapture vc(-1);
-  if (vc.isOpened()) {
-    cout << "Unable to open camera, exiting..." << endl;
+  VideoCapture vc(0);
+  if (!vc.isOpened()) {
+    cout << "Unable to open camera, exiting." << endl;
     return -1;
   }
 
@@ -22,8 +22,8 @@ int main()
   {
     Mat frame;
     vc >> frame;
-
     imshow("input", frame);
+    int key = waitKey(40);
   }
 
   return 0;
