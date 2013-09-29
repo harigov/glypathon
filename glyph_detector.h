@@ -7,5 +7,5 @@ class GlyphDetector
     ~GlyphDetector();
 
     bool DetectGlyph();
-}
+};
 

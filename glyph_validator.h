@@ -6,5 +6,5 @@ class GlyphValidator
     ~GlyphValidator();
 
     bool Validate();
-}
+};
 
