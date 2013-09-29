@@ -31,7 +31,9 @@ int main()
 
     detector.DetectGlyph(gray);
 
-    //imshow("input", frame);
+    namedWindow("input");
+    moveWindow("input", 0, 0);
+    imshow("input", frame);
     waitKey(40);
   }
 

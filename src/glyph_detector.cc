@@ -29,7 +29,9 @@ bool GlyphDetector::DetectGlyph(const Mat gray)
   BlobDetector blobDetector;
   blobDetector.DetectBlobs(canny, true);
 
-  //imshow("detector", canny);
+  namedWindow("edges");
+  moveWindow("edges", 640, 0);
+  imshow("edges", canny);
 
   return true;
 }

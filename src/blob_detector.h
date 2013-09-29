@@ -5,7 +5,9 @@
 struct BlobInfo
 {
   cv::Point2d origin;
-  int size;
+  cv::Rect bbox;
+  int numPixels;
+  short targetColor;
   std::vector<cv::Point2d> vertices;
 };
 
@@ -22,10 +24,10 @@ class BlobDetector
   std::vector<BlobInfo> blobs_;
 
   void FloodFill(cv::Point2d node, short target, short replacement,
-                 cv::Point2d* origin, int* size);
+                 BlobInfo* info);
   void FindVertices(cv::Point2d origin, short target, int delta,
                     std::vector<cv::Point2d>* vertices);
-  cv::Point2d StepOnPerimeter(cv::Point2d origin, short target);
+  cv::Point2d StepOnPerimeter(cv::Point2d origin, short target, int* move);
 };
 
 int Compare(cv::Point2d lhs, cv::Point2d rhs);
