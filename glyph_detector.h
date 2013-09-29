@@ -1,11 +1,13 @@
-// Defines GlyphDetector that implements all the logic for detecting glyphs.
+#pragma once
+
+#include "opencv2/opencv.hpp"
 
 class GlyphDetector
 {
   public:
-    GlyphDetector();
-    ~GlyphDetector();
+  GlyphDetector();
+  ~GlyphDetector();
 
-    bool DetectGlyph();
+  bool DetectGlyph(const cv::Mat gray);
 };
 

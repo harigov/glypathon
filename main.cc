@@ -18,11 +18,20 @@ int main()
 
   bool quit = false;
 
+  GlyphDetector detector;
+
   while (!quit)
   {
     Mat frame;
     vc >> frame;
-    imshow("input", frame);
+    resize(frame, frame, Size(frame.cols / 2, frame.rows / 2));
+
+    Mat gray;
+    cvtColor(frame, gray, CV_BGR2GRAY);
+
+    detector.DetectGlyph(gray);
+
+    //imshow("input", frame);
     waitKey(40);
   }
 
