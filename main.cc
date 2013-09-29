@@ -10,10 +10,10 @@ using namespace std;
 
 int main()
 {
-  VideoCapture vc(-1);
-  if (vc.isOpened()) {
+  VideoCapture vc(CV_CAP_ANY);
+  if (!vc.isOpened()) {
     cout << "Unable to open camera, exiting..." << endl;
-    return -1;
+    return 1;
   }
 
   bool quit = false;
