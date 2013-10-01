@@ -3,8 +3,8 @@ SRCDIR=src
 APPNAME=app.bin
 
 CC=g++
-CFLAGS+=-g -Wall `pkg-config opencv --cflags`
-LFLAGS+=`pkg-config opencv --libs`
+CFLAGS+=-std=c++11 -stdlib=libc++ -g -Wall `pkg-config opencv --cflags`
+LFLAGS+=-std=c++11 -stdlib=libc++ `pkg-config opencv --libs`
 
 ifdef REL
 	CFLAGS+=-O3

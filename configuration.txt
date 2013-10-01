@@ -1,0 +1,4 @@
+display_blob_detection true
+display_vertices true
+display_text false
+display_bounding_boxes false

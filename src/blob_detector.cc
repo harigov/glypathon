@@ -1,4 +1,5 @@
 #include "blob_detector.h"
+#include "configuration.h"
 
 #include <sstream>
 #include <queue>
@@ -19,6 +20,7 @@ BlobDetector::~BlobDetector()
 
 void BlobDetector::Run(const Mat grayscale, bool debug = false)
 {
+  Configuration::Instance();
   namedWindow("filled");
   moveWindow("filled", 700, 650);
 
@@ -67,7 +69,7 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
     DetectVertices(filled, &info);
   }
 
-  if (debug) {
+  if (Configuration::Instance().ReadBool("display_blob_detection")) {
     Mat debug = Mat(labeled_.rows, labeled_.cols, CV_8UC3);
     debug.setTo(Scalar(0, 0, 0));
 
@@ -87,27 +89,34 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
       }
 
       OverlayColor(Vec3b(0, 0, 200), info, &debug);
-      stringstream ss;
-      ss << "[p: " << info.numPixels << ", l: " << info.label <<
-            "v: " << info.vertices.size() << "]";
-      //putText(debug, ss.str(), info.origin, FONT_HERSHEY_SIMPLEX, 0.35,
-      //        Scalar(255, 255, 255), 1);
 
-      for (int i = 0; i < info.vertices.size(); ++i) {
-        circle(debug, info.vertices[i], 1, Scalar(0, 255, 255));
+      if (Configuration::Instance().ReadBool("display_text")) {
+        stringstream ss;
+        ss << "[p: " << info.numPixels << ", l: " << info.label <<
+              "v: " << info.vertices.size() << "]";
+        putText(debug, ss.str(), info.origin, FONT_HERSHEY_SIMPLEX, 0.35,
+                Scalar(255, 255, 255), 1);
       }
 
-      //rectangle(debug, Point2d(info.bbox.x, info.bbox.y),
-      //          Point2d(info.bbox.x + info.bbox.width,
-      //                  info.bbox.y + info.bbox.height),
-      //          Scalar(255, 0, 0));
+      if (Configuration::Instance().ReadBool("display_vertices")) {
+        for (int i = 0; i < info.vertices.size(); ++i) {
+          circle(debug, info.vertices[i], 1, Scalar(0, 255, 255));
+        }
+      }
+
+      if (Configuration::Instance().ReadBool("display_bounding_boxes")) {
+        rectangle(debug, Point2d(info.bbox.x, info.bbox.y),
+                  Point2d(info.bbox.x + info.bbox.width,
+                          info.bbox.y + info.bbox.height),
+                  Scalar(255, 0, 0));
+      }
     }
 
-    cout << "Blobs detected: " << blobs_.size() << endl;
-
-    namedWindow("labeled");
-    moveWindow("labeled", 0, 400);
-    imshow("labeled", debug);
+    namedWindow("debug");
+    moveWindow("debug", 0, 400);
+    imshow("debug", debug);
+  } else {
+    destroyWindow("debug");
   }
 }
 
