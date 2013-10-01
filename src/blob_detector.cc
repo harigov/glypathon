@@ -90,17 +90,17 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
       stringstream ss;
       ss << "[p: " << info.numPixels << ", l: " << info.label <<
             "v: " << info.vertices.size() << "]";
-      putText(debug, ss.str(), info.origin, FONT_HERSHEY_SIMPLEX, 0.35,
-              Scalar(255, 255, 255), 1);
+      //putText(debug, ss.str(), info.origin, FONT_HERSHEY_SIMPLEX, 0.35,
+      //        Scalar(255, 255, 255), 1);
 
       for (int i = 0; i < info.vertices.size(); ++i) {
         circle(debug, info.vertices[i], 1, Scalar(0, 255, 255));
       }
 
-      rectangle(debug, Point2d(info.bbox.x, info.bbox.y),
-                Point2d(info.bbox.x + info.bbox.width,
-                        info.bbox.y + info.bbox.height),
-                Scalar(255, 0, 0));
+      //rectangle(debug, Point2d(info.bbox.x, info.bbox.y),
+      //          Point2d(info.bbox.x + info.bbox.width,
+      //                  info.bbox.y + info.bbox.height),
+      //          Scalar(255, 0, 0));
     }
 
     cout << "Blobs detected: " << blobs_.size() << endl;
@@ -242,38 +242,28 @@ Mat BlobDetector::FillHoles(const BlobInfo& info)
 
 void BlobDetector::DetectVertices(const Mat& blob, BlobInfo* info)
 {
-  const int windowSize = 16;  // Search window width and height.
+  Mat harris(blob.size(), CV_32FC1);
+  cornerHarris(blob, harris, 10, 3, 0.04, BORDER_DEFAULT);
+  Mat norm, scaled;
+  normalize(harris, norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
+  convertScaleAbs(norm, scaled);
 
-  vector<Point2d> edgePoints;
+  int threshold = 150;
+
+  const Point2d offset(info->bbox.x, info->bbox.y);
+  vector<Point2d> edges;
   // The image is padded, skip the padding.
-  for (int y = 1; y < blob.rows - 1; ++y) {
-    for (int x = 1; x < blob.cols - 1; ++x) {
-      // Edge is a white pixel (1) with at least one adjacent black pixel (0).
-      if (blob.at<uchar>(y, x) == 1 &&
-          (blob.at<uchar>(y - 1, x + 0) == 0 ||
-           blob.at<uchar>(y + 0, x + 1) == 0 ||
-           blob.at<uchar>(y + 1, x + 0) == 0 ||
-           blob.at<uchar>(y + 0, x - 1) == 0)) {
-        edgePoints.push_back(Point2d(x, y));
+  for (int y = 1; y < scaled.rows - 1; ++y) {
+    for (int x = 1; x < scaled.cols - 1; ++x) {
+      if (scaled.at<uchar>(y, x) > threshold) {
+        Point2d p(x, y);
+        edges.push_back(p);
+        info->vertices.push_back(p + offset);
       }
     }
   }
 
-  assert(!edgePoints.empty());
-
-  // This part is not giving good results.
-  const int idealValue = windowSize * windowSize / 2;
-  const int tolerance = windowSize * windowSize / 6;
-  const int lowThreshold = idealValue - tolerance;
-  const int highThreshold = idealValue + tolerance;
-
-  for (int i = 0; i < edgePoints.size(); ++i) {
-    int sum = SumWindow(blob, edgePoints[i], windowSize);
-    if (sum < lowThreshold || sum > highThreshold) {
-      info->vertices.push_back(edgePoints[i] +
-                               Point2d(info->bbox.x, info->bbox.y));
-    }
-  }
+  return;
 }
 
 int BlobDetector::SumWindow(const Mat blob, const Point2d center, int window)

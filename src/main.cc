@@ -34,7 +34,7 @@ int main()
     namedWindow("input");
     moveWindow("input", 0, 0);
     imshow("input", frame);
-    waitKey(40);
+    waitKey(5);
   }
 
   return 0;
