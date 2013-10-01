@@ -17,7 +17,7 @@ Configuration& Configuration::Instance()
 }
 
 Configuration::Configuration()
-: reader_(Reader, this, "configuration.xml")
+: reader_(Reader, this, "configuration.txt")
 {
 }
 
