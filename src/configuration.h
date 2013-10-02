@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <map>
-#include <mutex>
 #include <thread>
 
 class Configuration
@@ -11,10 +10,13 @@ class Configuration
   static Configuration& Instance();
   ~Configuration();
 
-  int ReadInt(const std::string name);
-  float ReadFloat(const std::string name);
-  bool ReadBool(const std::string name);
-  std::string ReadString(const std::string name);
+  void Load(const std::string& filename);
+
+  int ReadInt(const std::string& name);
+  float ReadFloat(const std::string& name);
+  double ReadDouble(const std::string& name);
+  bool ReadBool(const std::string& name);
+  std::string ReadString(const std::string& name);
 
  private:
   Configuration();
@@ -22,6 +24,6 @@ class Configuration
   void ReadFile(const std::string& filename);
 
   std::thread reader_;
-  std::mutex mutex_;
-  std::map<std::string, std::string> variables_;
+  std::map<std::string, std::string> variables_[2];
+  int idx_;
 };

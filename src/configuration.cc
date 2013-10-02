@@ -17,7 +17,7 @@ Configuration& Configuration::Instance()
 }
 
 Configuration::Configuration()
-: reader_(Reader, this, "configuration.txt")
+: idx_(0)
 {
 }
 
@@ -25,29 +25,42 @@ Configuration::~Configuration()
 {
 }
 
-int Configuration::ReadInt(const string name)
+void Configuration::Load(const string& filename)
+{
+  ReadFile(filename);
+  reader_ = thread(Reader, this, filename);
+}
+
+int Configuration::ReadInt(const string& name)
 {
   int value;
-  stringstream ss(variables_.at(name));
+  stringstream ss(variables_[idx_].at(name));
   ss >> value;
 
   return value;
 }
 
-float Configuration::ReadFloat(const string name)
+float Configuration::ReadFloat(const string& name)
 {
-  lock_guard<mutex> lock(mutex_);
   float value;
-  stringstream ss(variables_.at(name));
+  stringstream ss(variables_[idx_].at(name));
   ss >> value;
 
   return value;
 }
 
-bool Configuration::ReadBool(const string name)
+double Configuration::ReadDouble(const string& name)
 {
-  lock_guard<mutex> lock(mutex_);
-  if (variables_.at(name) == "true") {
+  double value;
+  stringstream ss(variables_[idx_].at(name));
+  ss >> value;
+
+  return value;
+}
+
+bool Configuration::ReadBool(const string& name)
+{
+  if (variables_[idx_].at(name) == "true") {
     return true;
   }
 
@@ -55,10 +68,9 @@ bool Configuration::ReadBool(const string name)
 }
 
 
-string Configuration::ReadString(const string name)
+string Configuration::ReadString(const string& name)
 {
-  lock_guard<mutex> lock(mutex_);
-  return variables_.at(name);
+  return variables_[idx_].at(name);
 }
 
 void Configuration::Reader(Configuration* instance, const string& filename)
@@ -84,12 +96,15 @@ void Configuration::Reader(Configuration* instance, const string& filename)
 
 void Configuration::ReadFile(const string& filename)
 {
+  int newIdx = (idx_ + 1) % 2;
   ifstream file(filename);
   string name, value;
+  auto& variables = variables_[newIdx];
 
-  lock_guard<mutex> lock(mutex_);
-  variables_.clear();
+  variables.clear();
   while (file >> name >> value) {
-    variables_[name] = value;
+    variables[name] = value;
   }
+
+  idx_ = newIdx;
 }

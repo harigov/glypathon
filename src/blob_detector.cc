@@ -20,21 +20,7 @@ BlobDetector::~BlobDetector()
 
 void BlobDetector::Run(const Mat grayscale, bool debug = false)
 {
-  Configuration::Instance();
-  namedWindow("filled");
-  moveWindow("filled", 700, 650);
-
   Mat canny = DetectGradient(grayscale);
-
-  // add 2 cols and 2 rows to void handling corner cases.
-  // find connected components.
-  // represent with 0s and 1s connected component into a padded frame.
-  // keep track of every blob (origin, label).
-  // extract information of every blob:
-  //   - outside perimeter.
-  //   - number of vertices.
-  //   - size.
-  //
 
   // Padded frame with labels of connected components.
   labeled_ = Mat(grayscale.rows + 2, grayscale.cols + 2, CV_16SC1);
@@ -62,11 +48,22 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
     }
   }
 
+  CornerHarrisParams params;
+  params.blockSize =
+      Configuration::Instance().ReadInt("corner_harris_block_size");
+  params.apertureSize =
+      Configuration::Instance().ReadInt("corner_harris_aperture_size");
+  params.freeCoefficient =
+      Configuration::Instance().ReadDouble("corner_harris_free_coefficient");
+  params.threshold =
+      Configuration::Instance().ReadDouble("corner_harris_threshold");
+
   // Approximate each blob to a polygon.
   for (int i = 0; i < blobs_.size(); ++i) {
     BlobInfo& info = blobs_[i];
     Mat filled = FillHoles(info);
-    DetectVertices(filled, &info);
+    DetectVertices(filled, params, &info);
+    // TODO: Choose number of vertices from 'candidate' vertices.
   }
 
   if (Configuration::Instance().ReadBool("display_blob_detection")) {
@@ -249,22 +246,22 @@ Mat BlobDetector::FillHoles(const BlobInfo& info)
   return filled;
 }
 
-void BlobDetector::DetectVertices(const Mat& blob, BlobInfo* info)
+void BlobDetector::DetectVertices(const Mat& blob,
+    const CornerHarrisParams& params, BlobInfo* info)
 {
   Mat harris(blob.size(), CV_32FC1);
-  cornerHarris(blob, harris, 10, 3, 0.04, BORDER_DEFAULT);
+  cornerHarris(blob, harris, params.blockSize, params.apertureSize,
+               params.freeCoefficient, BORDER_REPLICATE);
   Mat norm, scaled;
   normalize(harris, norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
   convertScaleAbs(norm, scaled);
 
-  int threshold = 150;
-
-  const Point2d offset(info->bbox.x, info->bbox.y);
+  const Point2d offset(info->bbox.x - 1, info->bbox.y - 1);
   vector<Point2d> edges;
   // The image is padded, skip the padding.
   for (int y = 1; y < scaled.rows - 1; ++y) {
     for (int x = 1; x < scaled.cols - 1; ++x) {
-      if (scaled.at<uchar>(y, x) > threshold) {
+      if (scaled.at<uchar>(y, x) > params.threshold) {
         Point2d p(x, y);
         edges.push_back(p);
         info->vertices.push_back(p + offset);
