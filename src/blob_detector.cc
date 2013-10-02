@@ -129,14 +129,20 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
 
 Mat BlobDetector::DetectGradient(Mat grayscale)
 {
+  const int blurKernelSize =
+      Configuration::Instance().ReadInt("canny_blur_kernel_size");
+
   Mat blur;
-  const Size kernelSize(3, 3);
-  cv::blur(grayscale, blur, kernelSize);
+  cv::blur(grayscale, blur, Size(blurKernelSize, blurKernelSize));
+
+  const int lowThreshold =
+      Configuration::Instance().ReadInt("canny_low_threshold");
+  const int highThreshold =
+      Configuration::Instance().ReadInt("canny_high_threshold");
+  const int kernelSizeCanny =
+      Configuration::Instance().ReadInt("canny_kernel_size");
 
   Mat canny;
-  const int lowThreshold = 10;
-  const int highThreshold = 100;
-  const int kernelSizeCanny = 3;
   Canny(blur, canny, lowThreshold, highThreshold, kernelSizeCanny);
 
   return canny;

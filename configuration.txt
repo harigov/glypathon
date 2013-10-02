@@ -2,6 +2,10 @@ display_blob_detection true
 display_vertices true
 display_text false
 display_bounding_boxes false
+canny_blur_kernel_size 3
+canny_low_threshold 10
+canny_high_threshold 100
+canny_kernel_size 3
 corner_harris_block_size 7
 corner_harris_aperture_size 5
 corner_harris_free_coefficient 0.02
