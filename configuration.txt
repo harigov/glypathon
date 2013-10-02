@@ -1,3 +1,5 @@
+frame_resize_factor .5
+display_input_frame false
 display_blob_detection true
 display_vertices true
 display_text false

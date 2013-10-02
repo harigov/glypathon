@@ -120,7 +120,7 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
     }
 
     namedWindow("debug");
-    moveWindow("debug", 0, 400);
+    moveWindow("debug", 0, 0);
     imshow("debug", debug);
   } else {
     destroyWindow("debug");

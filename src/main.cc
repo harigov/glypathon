@@ -27,16 +27,25 @@ int main()
   {
     Mat frame;
     vc >> frame;
-    resize(frame, frame, Size(frame.cols / 2, frame.rows / 2));
+
+    const float factor =
+      Configuration::Instance().ReadFloat("frame_resize_factor");
+
+    if (factor != 1.0f) {
+      resize(frame, frame, Size(frame.cols * factor, frame.rows * factor));
+    }
 
     Mat gray;
     cvtColor(frame, gray, CV_BGR2GRAY);
 
     detector.DetectGlyph(gray);
 
-    namedWindow("input");
-    moveWindow("input", 0, 0);
-    imshow("input", frame);
+    if(Configuration::Instance().ReadBool("display_input_frame")) {
+      namedWindow("input");
+      moveWindow("input", 0, 0);
+      imshow("input", frame);
+    }
+
     waitKey(5);
   }
 
