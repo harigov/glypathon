@@ -36,6 +36,14 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
     }
   }
 
+  const int min_blob_size =
+     Configuration::Instance().ReadFloat("blob_min_norm_bbox_size") *
+     grayscale.cols;
+
+  const int max_blob_size =
+     Configuration::Instance().ReadFloat("blob_max_norm_bbox_size") *
+     grayscale.cols;
+
   // Label all target areas and extract information of the blob.
   int currentLabel = 0;
   for (int y = 0; y < labeled_.rows; ++y) {
@@ -43,7 +51,14 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
       if (labeled_.at<short>(y, x) == target) {
         BlobInfo info;
         FloodFill(Point2d(x, y), target, currentLabel++, &info);
-        blobs_.push_back(info);
+
+        // Reject blobs based on size criteria.
+        if (info.bbox.width > min_blob_size &&
+            info.bbox.width < max_blob_size &&
+            info.bbox.height > min_blob_size &&
+            info.bbox.height < max_blob_size) {
+          blobs_.push_back(info);
+        }
       }
     }
   }
@@ -79,11 +94,6 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
 
     for (int i = 0; i < blobs_.size(); ++i) {
       const BlobInfo& info = blobs_[i];
-
-      // Ignore very large blobs.
-      if (info.numPixels > labeled_.rows * labeled_.cols / (4 * 4)) {
-        continue;
-      }
 
       OverlayColor(Vec3b(0, 0, 200), info, &debug);
 

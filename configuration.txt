@@ -6,3 +6,5 @@ corner_harris_block_size 7
 corner_harris_aperture_size 5
 corner_harris_free_coefficient 0.02
 corner_harris_threshold 100
+blob_min_norm_bbox_size 0.05
+blob_max_norm_bbox_size 0.4
