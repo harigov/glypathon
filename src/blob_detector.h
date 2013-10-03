@@ -32,6 +32,9 @@ class BlobDetector
   std::vector<BlobInfo> blobs_;
 
   cv::Mat DetectGradient(cv::Mat frame);
+  void ReduceVertices(const std::vector<cv::Point2d>& vertices,
+                      std::vector<cv::Point2d>* reducedVertices,
+                      const float mergingDistance);
   void FloodFill(cv::Point2d node, short target, short replacement,
                  BlobInfo* info);
   cv::Mat FillHoles(const BlobInfo& info);
@@ -41,7 +44,9 @@ class BlobDetector
   void OverlayColor(const cv::Vec3b color, const BlobInfo& info, cv::Mat* bgr);
 };
 
-int Compare(cv::Point2d lhs, cv::Point2d rhs);
+int Compare(const cv::Point2d& lhs, const cv::Point2d& rhs);
+float SquaredDistance(const cv::Point2d& lhs, const cv::Point2d& rhs);
+int RootNode(const std::vector<int>& labels, int idx);
 
 // For debug porpuses mainly.
 bool IsValid(BlobInfo& blobInfo, cv::Mat frame);

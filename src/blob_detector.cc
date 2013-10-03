@@ -73,12 +73,19 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
   params.threshold =
       Configuration::Instance().ReadDouble("corner_harris_threshold");
 
+  const float verticesMergingDistance =
+      Configuration::Instance().ReadFloat("vertices_merging_distance");
+
   // Approximate each blob to a polygon.
   for (int i = 0; i < blobs_.size(); ++i) {
     BlobInfo& info = blobs_[i];
     Mat filled = FillHoles(info);
     DetectVertices(filled, params, &info);
-    // TODO: Choose number of vertices from 'candidate' vertices.
+    if (info.vertices.size() > 1) {
+      vector<Point2d> reducedVertices;
+      ReduceVertices(info.vertices, &info.vertices, verticesMergingDistance);
+      // TODO: Snap vertices to edges.
+    }
   }
 
   if (Configuration::Instance().ReadBool("display_blob_detection")) {
@@ -99,8 +106,7 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
 
       if (Configuration::Instance().ReadBool("display_text")) {
         stringstream ss;
-        ss << "[p: " << info.numPixels << ", l: " << info.label <<
-              "v: " << info.vertices.size() << "]";
+        ss << "[v: " << info.vertices.size() << "]";
         putText(debug, ss.str(), info.origin, FONT_HERSHEY_SIMPLEX, 0.35,
                 Scalar(255, 255, 255), 1);
       }
@@ -146,6 +152,60 @@ Mat BlobDetector::DetectGradient(Mat grayscale)
   Canny(blur, canny, lowThreshold, highThreshold, kernelSizeCanny);
 
   return canny;
+}
+
+void BlobDetector::ReduceVertices(const vector<Point2d>& vertices,
+                                  vector<Point2d>* reducedVertices,
+                                  const float mergingDistance)
+{
+  const float squaredMergingDistance = mergingDistance * mergingDistance;
+  const int size = vertices.size();
+
+  vector<int> labels;
+  labels.resize(size);
+  for (int i = 0; i < size; ++i) {
+    labels[i] = i;
+  }
+
+  for (int i = 0; i < size; ++i) {
+    for (int j = 0; j < size; ++j) {
+      if (i == j) {
+        continue;
+      }
+
+      if (SquaredDistance(vertices[i], vertices[j]) < squaredMergingDistance) {
+        labels[i] = RootNode(labels, j);
+      }
+    }
+  }
+
+  map<int, vector<int>> clusters;
+  for (int i = 0; i < size; ++i) {
+    clusters[RootNode(labels, i)].push_back(i);
+  }
+
+  vector<Point2d> means;
+  for (auto cluster : clusters) {
+    Point2d acc(0, 0);
+
+    for (auto idx : cluster.second) {
+      acc += vertices[idx];
+    }
+
+    const int numItems = cluster.second.size();
+    means.push_back(Point2d(acc.x / numItems, acc.y / numItems));
+  }
+
+  *reducedVertices = means;
+}
+
+int RootNode(const vector<int>& labels, int idx)
+{
+  while (labels[idx] != idx) {
+    idx = labels[idx];
+  }
+
+  return idx;
 }
 
 void BlobDetector::OverlayColor(const Vec3b color, const BlobInfo& info,
@@ -321,7 +381,12 @@ bool IsValid(BlobInfo& blobInfo, Mat frame)
   return blobInfo.numPixels >= minBlobSize && blobInfo.numPixels <= maxBlobSize;
 }
 
-int Compare(cv::Point2d lhs, cv::Point2d rhs)
+float SquaredDistance(const Point2d& lhs, const Point2d& rhs)
+{
+  return (lhs.x - rhs.x) * (lhs.x - rhs.x) + (lhs.y - rhs.y) * (lhs.y - rhs.y);
+}
+
+int Compare(const Point2d& lhs, const Point2d& rhs)
 {
   if (lhs.y < rhs.y) {
     return -1;
