@@ -1,9 +1,10 @@
 #include "blob_detector.h"
 #include "configuration.h"
 
-#include <sstream>
-#include <queue>
 #include <cassert>
+#include <limits>
+#include <queue>
+#include <sstream>
 
 using namespace cv;
 using namespace std;
@@ -76,6 +77,11 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
   const float verticesMergingDistance =
       Configuration::Instance().ReadFloat("vertices_merging_distance");
 
+  const int snapWindowSize =
+      Configuration::Instance().ReadInt("snap_vertices_window_size");
+  const float snapSearchFactor =
+      Configuration::Instance().ReadFloat("snap_vertices_search_factor");
+
   // Approximate each blob to a polygon.
   for (int i = 0; i < blobs_.size(); ++i) {
     BlobInfo& info = blobs_[i];
@@ -84,7 +90,13 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
     if (info.vertices.size() > 1) {
       vector<Point2d> reducedVertices;
       ReduceVertices(info.vertices, &info.vertices, verticesMergingDistance);
-      // TODO: Snap vertices to edges.
+
+      // Only snap vertices to the edges of the blob the polygon has 4 vertices.
+      if (info.vertices.size() == 4) {
+        SnapVerticesToEdgesOfConvexPolygon(filled, info, snapSearchFactor,
+                                           snapWindowSize, &info.vertices);
+        candidates_.push_back(i);
+      }
     }
   }
 
@@ -131,6 +143,16 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
   } else {
     destroyWindow("debug");
   }
+}
+
+int BlobDetector::GetCandidatesCount() const
+{
+  return candidates_.size();
+}
+
+const std::vector<cv::Point2d>& BlobDetector::GetVertices(const int index) const
+{
+  return blobs_[candidates_[index]].vertices;
 }
 
 Mat BlobDetector::DetectGradient(Mat grayscale)
@@ -344,42 +366,69 @@ void BlobDetector::DetectVertices(const Mat& blob,
       }
     }
   }
-
-  return;
 }
 
-int BlobDetector::SumWindow(const Mat blob, const Point2d center, int window)
+void BlobDetector::SnapVerticesToEdgesOfConvexPolygon(
+    const Mat& blob,
+    const BlobInfo& info,
+    const float snapSearchFactor,
+    const int windowSize,
+    vector<Point2d>* vertices)
 {
-  const int width = blob.cols;
-  const int height = blob.rows;
-  const int halfWindow = window >> 1;
+  const int halfWindowSize = windowSize >> 1;
+  const int halfSearchSize = (max(blob.rows, blob.cols) * snapSearchFactor) / 2;
+  const Point2d offset(info.bbox.x - 1, info.bbox.y - 1);
 
-  int sum = 0;
-  for (int y = -halfWindow; y < halfWindow; ++y) {
-    for (int x = -halfWindow; x < halfWindow; ++x) {
-      int xx = center.x + x;
-      int yy = center.y + y;
+  for (auto& vertice : *vertices)
+  {
+    const int xini =
+      max(static_cast<int>(vertice.x - offset.x - halfSearchSize), 0);
+    const int xend =
+      min(static_cast<int>(vertice.x - offset.x + halfSearchSize), blob.cols);
+    const int yini =
+      max(static_cast<int>(vertice.y - offset.y - halfSearchSize), 0);
+    const int yend =
+      min(static_cast<int>(vertice.y - offset.y + halfSearchSize), blob.rows);
 
-      if (yy < 0 || yy >= height || xx < 0 || xx >= width) {
-        continue;
+    Point2d best = vertice;
+    int minSum = numeric_limits<int>::max();
+
+    for (int y = yini; y < yend; ++y) {
+      for (int x = xini; x < xend; ++x) {
+        if (blob.at<uchar>(y, x) == 1) {
+          int sum = SumBlock(blob, x, y, halfWindowSize, minSum);
+          if (sum < minSum) {
+            vertice = Point2d(x, y) + offset;
+            minSum = sum;
+          }
+        }
       }
+    }
+  }
+}
 
-      sum += blob.at<uchar>(yy, xx);
+int BlobDetector::SumBlock(const Mat img, const int x, const int y,
+                           const int halfWindowSize,
+                           const int earlyTerminationSum)
+{
+  const int xini = max(x - halfWindowSize, 0);
+  const int xend = min(x + halfWindowSize, img.cols);
+  const int yini = max(y - halfWindowSize, 0);
+  const int yend = min(y + halfWindowSize, img.rows);
+
+  int acc = 0;
+  for (int y = yini; y < yend; ++y) {
+    for (int x = xini; x < xend; ++x) {
+      acc += img.at<uchar>(y, x);
+      if (acc >= earlyTerminationSum) {
+        return numeric_limits<int>::max();
+      }
     }
   }
 
-  return sum;
+  return acc;
 }
 
-bool IsValid(BlobInfo& blobInfo, Mat frame)
-{
-  const int minBlobSize = 16 * 16;
-  const int maxBlobSize = frame.rows * frame.cols / (3 * 3);
-
-  return blobInfo.numPixels <= maxBlobSize;
-
-  return blobInfo.numPixels >= minBlobSize && blobInfo.numPixels <= maxBlobSize;
-}
 
 float SquaredDistance(const Point2d& lhs, const Point2d& rhs)
 {

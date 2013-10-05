@@ -2,7 +2,7 @@ frame_resize_factor .5
 display_input_frame false
 display_blob_detection true
 display_vertices true
-display_text true
+display_text false
 display_bounding_boxes false
 canny_blur_kernel_size 3
 canny_low_threshold 10
@@ -15,3 +15,5 @@ corner_harris_threshold 100
 blob_min_norm_bbox_size 0.05
 blob_max_norm_bbox_size 0.4
 vertices_merging_distance 4
+snap_vertices_window_size 16
+snap_vertices_search_factor 0.25

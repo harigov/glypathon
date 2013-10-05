@@ -18,6 +18,8 @@ class BlobDetector
   ~BlobDetector();
 
   void Run(const cv::Mat frame, bool debug);
+  int GetCandidatesCount() const;
+  const std::vector<cv::Point2d>& GetVertices(const int index) const;
 
  private:
   struct CornerHarrisParams
@@ -30,16 +32,24 @@ class BlobDetector
 
   cv::Mat labeled_;
   std::vector<BlobInfo> blobs_;
+  std::vector<int> candidates_;
 
   cv::Mat DetectGradient(cv::Mat frame);
   void ReduceVertices(const std::vector<cv::Point2d>& vertices,
                       std::vector<cv::Point2d>* reducedVertices,
                       const float mergingDistance);
+  void SnapVerticesToEdgesOfConvexPolygon(const cv::Mat& blob,
+                                          const BlobInfo& info,
+                                          const float snapSearchFactor,
+                                          const int windowSize,
+                                          std::vector<cv::Point2d>* vertices);
   void FloodFill(cv::Point2d node, short target, short replacement,
                  BlobInfo* info);
   cv::Mat FillHoles(const BlobInfo& info);
   void DetectVertices(const cv::Mat& blob, const CornerHarrisParams& params,
                       BlobInfo* info);
+  int SumBlock(const cv::Mat img, const int x, const int y,
+               const int halfWindowSize, const int earlyTerminationSum);
   int SumWindow(const cv::Mat blob, const cv::Point2d center, int window);
   void OverlayColor(const cv::Vec3b color, const BlobInfo& info, cv::Mat* bgr);
 };
