@@ -11,6 +11,7 @@ class Configuration
   ~Configuration();
 
   void Load(const std::string& filename);
+  void Stop();
 
   int ReadInt(const std::string& name);
   float ReadFloat(const std::string& name);
@@ -26,4 +27,5 @@ class Configuration
   std::thread reader_;
   std::map<std::string, std::string> variables_[2];
   int idx_;
+  bool quit_;
 };

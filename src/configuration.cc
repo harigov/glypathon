@@ -17,7 +17,7 @@ Configuration& Configuration::Instance()
 }
 
 Configuration::Configuration()
-: idx_(0)
+: idx_(0), quit_(false)
 {
 }
 
@@ -29,6 +29,12 @@ void Configuration::Load(const string& filename)
 {
   ReadFile(filename);
   reader_ = thread(Reader, this, filename);
+}
+
+void Configuration::Stop()
+{
+  quit_ = true;
+  reader_.join();
 }
 
 int Configuration::ReadInt(const string& name)
@@ -78,7 +84,7 @@ void Configuration::Reader(Configuration* instance, const string& filename)
   struct stat st;
   time_t timestamp = 0;
 
-  while (true) {
+  while (!instance->quit_) {
     if (stat(filename.c_str(), &st)) {
       cout << "Configuration file " << filename << " not found!" << endl;
     } else {
