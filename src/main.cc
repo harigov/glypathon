@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include "opencv2/opencv.hpp"
-#include "sdl2/sdl.h"
-#include "sdl2/sdl_image.h"
+#include "SDL.h"
+#include "SDL_image.h"
 
 #include "configuration.h"
 #include "glyph_detector.h"

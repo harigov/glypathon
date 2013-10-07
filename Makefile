@@ -3,9 +3,9 @@ SRCDIR=src
 APPNAME=app.bin
 
 CC=g++
-CFLAGS+=-std=c++11 -stdlib=libc++ -g -Wall \
+CFLAGS+=-std=c++0x -g -Wall \
 		`pkg-config opencv sdl2 SDL2_image --cflags`
-LFLAGS+=-std=c++11 -stdlib=libc++ \
+LFLAGS+=-std=c++0x \
 		`pkg-config opencv sdl2 SDL2_image --libs`
 
 ifdef REL

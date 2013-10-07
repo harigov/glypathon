@@ -23,15 +23,3 @@ class Glyph
     Glyph& operator=(const Glyph&);
 };
 
-class GlyphDB
-{
-  public:
-    GlyphDB(const std::string& filename);
-    ~GlyphDB();
-
-    std::string GetGlyphName(const Glyph& glyph);
-
-  private:
-    std::map<std::string, Glyph*> glyphs_;
-};
-
