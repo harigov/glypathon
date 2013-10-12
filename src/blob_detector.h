@@ -17,7 +17,7 @@ class BlobDetector
   BlobDetector();
   ~BlobDetector();
 
-  void Run(const cv::Mat frame, bool debug);
+  void Run(const cv::Mat frame);
   int GetCandidatesCount() const;
   const std::vector<cv::Point2d>& GetVertices(const int index) const;
 

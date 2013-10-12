@@ -25,9 +25,9 @@ Glyph::~Glyph()
   delete[] schema_;
 }
 
-bool Glyph::operator==(const Glyph& glyph)
+bool Glyph::operator==(const Glyph& glyph) const
 {
-  // TODO: add support for matching glyphs not 
+  // TODO: add support for matching glyphs not
   // oriented in the same way.
   if (glyph.size_ == size_)
   {
@@ -39,6 +39,21 @@ bool Glyph::operator==(const Glyph& glyph)
     return true;
   }
   return false;
+}
+
+int Glyph::Id() const
+{
+  return -1;
+}
+
+double Glyph::Angle() const
+{
+  return 0.0;
+}
+
+cv::Point2d Glyph::Center() const
+{
+  return cv::Point2d(300, 300);
 }
 
 GlyphDB::GlyphDB(const std::string& filename)
