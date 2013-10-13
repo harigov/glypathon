@@ -2,7 +2,7 @@
 
 #include <exception>
 
-#include "sdl2/sdl_image.h"
+#include "SDL_image.h"
 
 static const int WIDTH = 640;
 static const int HEIGHT = 480;

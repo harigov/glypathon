@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include "sdl2/sdl.h"
+#include "SDL.h"
 
 enum GameStatus
 {

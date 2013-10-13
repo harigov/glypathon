@@ -1,14 +1,6 @@
 #include <iostream>
 
 #include "opencv2/opencv.hpp"
-<<<<<<< HEAD
-#include "SDL.h"
-#include "SDL_image.h"
-
-#include "configuration.h"
-#include "blob_detector.h"
-#include "glyph_validator.h"
-=======
 
 #include "configuration.h"
 #include "game.h"
