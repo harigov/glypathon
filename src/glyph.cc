@@ -25,9 +25,9 @@ Glyph::~Glyph()
   delete[] schema_;
 }
 
-bool Glyph::operator==(const Glyph& glyph)
+bool Glyph::operator==(const Glyph& glyph) const
 {
-  // TODO: add support for matching glyphs not 
+  // TODO: add support for matching glyphs not
   // oriented in the same way.
   if (glyph.size_ == size_)
   {
@@ -39,5 +39,64 @@ bool Glyph::operator==(const Glyph& glyph)
     return true;
   }
   return false;
+}
+
+int Glyph::Id() const
+{
+  return -1;
+}
+
+double Glyph::Angle() const
+{
+  return 0.0;
+}
+
+cv::Point2d Glyph::Center() const
+{
+  return cv::Point2d(300, 300);
+}
+
+GlyphDB::GlyphDB(const std::string& filename)
+{
+  // Expects a file with the following format
+  //
+  //    glyph_name=glyph_schema
+  //
+  //  schema is specified as a sequence of b/w chars
+  //  b represents that a particular cell is black
+  //  w represents that a particular cell is white
+  //
+  // It always starts at the top-left corner of the glyph.
+  std::ifstream ifile(filename.c_str());
+  for (std::string line; getline(ifile, line); )
+  {
+    int idx = line.find_first_of("=");
+    std::string glyph_name = line.substr(0, idx);
+    std::string glyph_schema = line.substr(idx + 1, line.size());
+    glyphs_[glyph_name] = new Glyph(glyph_schema);
+    std::cout << "Read " << glyph_name << std::endl;
+  }
+}
+
+GlyphDB::~GlyphDB()
+{
+  std::map<std::string, Glyph*>::iterator it = glyphs_.begin();
+  while (it != glyphs_.end())
+  {
+    delete it->second;
+  }
+  glyphs_.clear();
+}
+
+std::string GlyphDB::GetGlyphName(const Glyph& glyph)
+{
+  std::map<std::string, Glyph*>::iterator it = glyphs_.begin();
+  while (it != glyphs_.end())
+  {
+    if (*it->second == glyph)
+      return it->first;
+  }
+  // TODO: throw an exception, maybe?
+  return "";
 }
 

@@ -19,8 +19,11 @@ BlobDetector::~BlobDetector()
 {
 }
 
-void BlobDetector::Run(const Mat grayscale, bool debug = false)
+void BlobDetector::Run(const Mat grayscale)
 {
+  blobs_.clear();
+  candidates_.clear();
+
   Mat canny = DetectGradient(grayscale);
 
   // Padded frame with labels of connected components.
