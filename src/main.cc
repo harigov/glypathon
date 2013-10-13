@@ -5,7 +5,7 @@
 #include "SDL_image.h"
 
 #include "configuration.h"
-#include "glyph_detector.h"
+#include "blob_detector.h"
 #include "glyph_validator.h"
 
 using namespace cv;
@@ -81,7 +81,7 @@ int main()
     return 2;
   }
 
-  GlyphDetector detector;
+  GlyphValidator glyphValidator("glyph_schema.txt");
 
   bool quit = false;
   int x = 0, y = 300;
@@ -109,11 +109,22 @@ int main()
     Mat gray;
     cvtColor(frame, gray, CV_BGR2GRAY);
 
-    detector.DetectGlyph(gray);
+    BlobDetector blobDetector;
+    blobDetector.Run(gray, true);
+    int blob_id = blobDetector.GetCandidatesCount();
+    cout << "Found " << blob_id << " number of candidates" << endl;
+    while (--blob_id >= 0)
+    {
+      vector<cv::Point2f> points = blobDetector.GetVertices(blob_id);
+      if (glyphValidator.Validate(gray, points))
+      {
+      }
+    }
 
     if(Configuration::Instance().ReadBool("display_input_frame")) {
       namedWindow("input");
       moveWindow("input", 0, 0);
+      namedWindow("debug");
       imshow("input", frame);
     }
 

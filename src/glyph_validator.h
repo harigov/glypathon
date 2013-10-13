@@ -20,7 +20,7 @@ class GlyphValidator
     std::map<std::string, Glyph*> glyphs_;
 
     std::string GetGlyphName(const Glyph& glyph);
-    char IdentifyCellColor(cv::Mat image, cv::Mat H, size_t r, size_t c);
+    char IdentifyCellColor(cv::Mat image, cv::Mat H, size_t r, size_t c, cv::Mat* map_image);
     cv::Point3f Transform(cv::Point3f& pt, cv::Mat H);
 };
 

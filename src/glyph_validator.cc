@@ -49,6 +49,7 @@ bool GlyphValidator::Validate(cv::Mat image, const vector<cv::Point2f>& detected
   if (detectedPts.size() != 4)
   {
     // TODO: raise an exception.
+    return false;
   }
 
   vector<cv::Point2f> modelPts;
@@ -58,16 +59,28 @@ bool GlyphValidator::Validate(cv::Mat image, const vector<cv::Point2f>& detected
   modelPts.push_back(cv::Point2f(0.0f, MODEL_SIZE));
   cv::Mat H = cv::findHomography(modelPts, detectedPts);
 
+  cv::Mat mapImg(cv::Size(MODEL_SIZE, MODEL_SIZE), CV_8UC1);
+
   string glyph_schema;
   for (size_t r = 0; r < GLYPH_SIZE; ++r)
   {
     for (size_t c = 0; c < GLYPH_SIZE; ++c)
     {
-      glyph_schema += IdentifyCellColor(image, H, r, c);
+      char color = IdentifyCellColor(image, H, r, c, &mapImg);
+      if (color == 'b' || color == 'w')
+      {
+        glyph_schema.push_back(color);
+      }
+      else
+      {
+        return false;
+      }
     }
   }
 
-  return false;
+  cv::imshow("debug", mapImg);
+  cout << "Schema is " << glyph_schema << endl;
+  return true;
 }
 
 std::string GlyphValidator::GetGlyphName(const Glyph& glyph)
@@ -82,7 +95,7 @@ std::string GlyphValidator::GetGlyphName(const Glyph& glyph)
   return "";
 }
 
-char GlyphValidator::IdentifyCellColor(cv::Mat image, cv::Mat H, size_t r, size_t c)
+char GlyphValidator::IdentifyCellColor(cv::Mat image, cv::Mat H, size_t r, size_t c, cv::Mat* map_image)
 {
   // Unless a cell is overwhelmingly of a particular color, we should not 
   // classify it to be one. This variable defines when a cell is 'overwhelmingly' 
@@ -98,13 +111,18 @@ char GlyphValidator::IdentifyCellColor(cv::Mat image, cv::Mat H, size_t r, size_
     {
       cv::Point3f model_pt(c * cell_size + x, r * cell_size + y, 1);
       cv::Point3f dest_pt = Transform(model_pt, H);
-      if (pixel_buf[int(dest_pt.y) * image.cols + int(dest_pt.x)] < color_threshold)
+      uint8_t pixel_color = image.at<uint8_t>(int(dest_pt.y / dest_pt.z), int(dest_pt.x / dest_pt.z));
+      if (pixel_color < color_threshold)
       {
         ++b_counter;
       }
       else
       {
         ++w_counter;
+      }
+      if (map_image)
+      {
+        map_image->at<uint8_t>(model_pt.y, model_pt.x) = pixel_color;
       }
     }
   }
@@ -121,8 +139,8 @@ cv::Point3f GlyphValidator::Transform(cv::Point3f& pt, cv::Mat H)
   vector<cv::Point3f> src_pts;
   src_pts.push_back(pt);
   vector<cv::Point3f> dest_pts;
-  dest_pts.push_back(cv::Point3f());
-  cv::transform(src_pts, dest_pts, H);
+  dest_pts.push_back(cv::Point3f(0, 0, 1));
+  cv::perspectiveTransform(src_pts, dest_pts, H);
   return dest_pts[0];
 }
 

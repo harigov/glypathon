@@ -51,7 +51,7 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
     for (int x = 0; x < labeled_.cols; ++x) {
       if (labeled_.at<short>(y, x) == target) {
         BlobInfo info;
-        FloodFill(Point2d(x, y), target, currentLabel++, &info);
+        FloodFill(Point2f(x, y), target, currentLabel++, &info);
 
         // Reject blobs based on size criteria.
         if (info.bbox.width > min_blob_size &&
@@ -88,7 +88,7 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
     Mat filled = FillHoles(info);
     DetectVertices(filled, params, &info);
     if (info.vertices.size() > 1) {
-      vector<Point2d> reducedVertices;
+      vector<Point2f> reducedVertices;
       ReduceVertices(info.vertices, &info.vertices, verticesMergingDistance);
 
       // Only snap vertices to the edges of the blob the polygon has 4 vertices.
@@ -130,8 +130,8 @@ void BlobDetector::Run(const Mat grayscale, bool debug = false)
       }
 
       if (Configuration::Instance().ReadBool("display_bounding_boxes")) {
-        rectangle(debug, Point2d(info.bbox.x, info.bbox.y),
-                  Point2d(info.bbox.x + info.bbox.width,
+        rectangle(debug, Point2f(info.bbox.x, info.bbox.y),
+                  Point2f(info.bbox.x + info.bbox.width,
                           info.bbox.y + info.bbox.height),
                   Scalar(255, 0, 0));
       }
@@ -150,7 +150,7 @@ int BlobDetector::GetCandidatesCount() const
   return candidates_.size();
 }
 
-const std::vector<cv::Point2d>& BlobDetector::GetVertices(const int index) const
+const std::vector<cv::Point2f>& BlobDetector::GetVertices(const int index) const
 {
   return blobs_[candidates_[index]].vertices;
 }
@@ -176,8 +176,8 @@ Mat BlobDetector::DetectGradient(Mat grayscale)
   return canny;
 }
 
-void BlobDetector::ReduceVertices(const vector<Point2d>& vertices,
-                                  vector<Point2d>* reducedVertices,
+void BlobDetector::ReduceVertices(const vector<Point2f>& vertices,
+                                  vector<Point2f>* reducedVertices,
                                   const float mergingDistance)
 {
   const float squaredMergingDistance = mergingDistance * mergingDistance;
@@ -206,16 +206,16 @@ void BlobDetector::ReduceVertices(const vector<Point2d>& vertices,
     clusters[RootNode(labels, i)].push_back(i);
   }
 
-  vector<Point2d> means;
+  vector<Point2f> means;
   for (auto cluster : clusters) {
-    Point2d acc(0, 0);
+    Point2f acc(0, 0);
 
     for (auto idx : cluster.second) {
       acc += vertices[idx];
     }
 
     const int numItems = cluster.second.size();
-    means.push_back(Point2d(acc.x / numItems, acc.y / numItems));
+    means.push_back(Point2f(acc.x / numItems, acc.y / numItems));
   }
 
   *reducedVertices = means;
@@ -246,20 +246,20 @@ void BlobDetector::OverlayColor(const Vec3b color, const BlobInfo& info,
 
 }
 
-void BlobDetector::FloodFill(Point2d node, short target, short replacement,
+void BlobDetector::FloodFill(Point2f node, short target, short replacement,
                              BlobInfo* info)
 {
-  queue<Point2d> q;
+  queue<Point2f> q;
   q.push(node);
 
   // Left-Top and Right-Bottom points for the bounding box.
-  Point2d lt(labeled_.cols, labeled_.rows);
-  Point2d rb(0, 0);
-  Point2d origin = node;
+  Point2f lt(labeled_.cols, labeled_.rows);
+  Point2f rb(0, 0);
+  Point2f origin = node;
   int numPixels = 0;
 
   while (!q.empty()) {
-    Point2d n = q.front();
+    Point2f n = q.front();
     q.pop();
 
     if (labeled_.at<short>(n.y, n.x) == target) {
@@ -275,10 +275,10 @@ void BlobDetector::FloodFill(Point2d node, short target, short replacement,
       }
 
       labeled_.at<short>(n.y, n.x) = replacement;
-      q.push(Point2d(n.x - 1, n.y));
-      q.push(Point2d(n.x + 1, n.y));
-      q.push(Point2d(n.x, n.y - 1));
-      q.push(Point2d(n.x, n.y + 1));
+      q.push(Point2f(n.x - 1, n.y));
+      q.push(Point2f(n.x + 1, n.y));
+      q.push(Point2f(n.x, n.y - 1));
+      q.push(Point2f(n.x, n.y + 1));
 
       ++numPixels;
     }
@@ -316,21 +316,21 @@ Mat BlobDetector::FillHoles(const BlobInfo& info)
 
   assert(checkSum == info.numPixels);
 
-  queue<Point2d> q;
-  q.push(Point2d(0, 0));  // Start at top-left background pixel.
+  queue<Point2f> q;
+  q.push(Point2f(0, 0));  // Start at top-left background pixel.
 
   while (!q.empty()) {
-    Point2d n = q.front();
+    Point2f n = q.front();
     q.pop();
 
     if (n.x >= 0 && n.x < filled.cols &&
         n.y >= 0 && n.y < filled.rows &&
         filled.at<uchar>(n.y, n.x) == backgroundColor) {
       filled.at<uchar>(n.y, n.x) = replacementColor;
-      q.push(Point2d(n.x - 1, n.y));
-      q.push(Point2d(n.x + 1, n.y));
-      q.push(Point2d(n.x, n.y - 1));
-      q.push(Point2d(n.x, n.y + 1));
+      q.push(Point2f(n.x - 1, n.y));
+      q.push(Point2f(n.x + 1, n.y));
+      q.push(Point2f(n.x, n.y - 1));
+      q.push(Point2f(n.x, n.y + 1));
     }
   }
 
@@ -354,13 +354,13 @@ void BlobDetector::DetectVertices(const Mat& blob,
   normalize(harris, norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
   convertScaleAbs(norm, scaled);
 
-  const Point2d offset(info->bbox.x - 1, info->bbox.y - 1);
-  vector<Point2d> edges;
+  const Point2f offset(info->bbox.x - 1, info->bbox.y - 1);
+  vector<Point2f> edges;
   // The image is padded, skip the padding.
   for (int y = 1; y < scaled.rows - 1; ++y) {
     for (int x = 1; x < scaled.cols - 1; ++x) {
       if (scaled.at<uchar>(y, x) > params.threshold) {
-        Point2d p(x, y);
+        Point2f p(x, y);
         edges.push_back(p);
         info->vertices.push_back(p + offset);
       }
@@ -373,11 +373,11 @@ void BlobDetector::SnapVerticesToEdgesOfConvexPolygon(
     const BlobInfo& info,
     const float snapSearchFactor,
     const int windowSize,
-    vector<Point2d>* vertices)
+    vector<Point2f>* vertices)
 {
   const int halfWindowSize = windowSize >> 1;
   const int halfSearchSize = (max(blob.rows, blob.cols) * snapSearchFactor) / 2;
-  const Point2d offset(info.bbox.x - 1, info.bbox.y - 1);
+  const Point2f offset(info.bbox.x - 1, info.bbox.y - 1);
 
   for (auto& vertice : *vertices)
   {
@@ -390,7 +390,7 @@ void BlobDetector::SnapVerticesToEdgesOfConvexPolygon(
     const int yend =
       min(static_cast<int>(vertice.y - offset.y + halfSearchSize), blob.rows);
 
-    Point2d best = vertice;
+    Point2f best = vertice;
     int minSum = numeric_limits<int>::max();
 
     for (int y = yini; y < yend; ++y) {
@@ -398,7 +398,7 @@ void BlobDetector::SnapVerticesToEdgesOfConvexPolygon(
         if (blob.at<uchar>(y, x) == 1) {
           int sum = SumBlock(blob, x, y, halfWindowSize, minSum);
           if (sum < minSum) {
-            vertice = Point2d(x, y) + offset;
+            vertice = Point2f(x, y) + offset;
             minSum = sum;
           }
         }
@@ -430,12 +430,12 @@ int BlobDetector::SumBlock(const Mat img, const int x, const int y,
 }
 
 
-float SquaredDistance(const Point2d& lhs, const Point2d& rhs)
+float SquaredDistance(const Point2f& lhs, const Point2f& rhs)
 {
   return (lhs.x - rhs.x) * (lhs.x - rhs.x) + (lhs.y - rhs.y) * (lhs.y - rhs.y);
 }
 
-int Compare(const Point2d& lhs, const Point2d& rhs)
+int Compare(const Point2f& lhs, const Point2f& rhs)
 {
   if (lhs.y < rhs.y) {
     return -1;
