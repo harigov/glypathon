@@ -9,9 +9,10 @@
 using namespace cv;
 using namespace std;
 
-GlyphDetector::GlyphDetector()
+GlyphDetector::GlyphDetector(string filename)
     : videoCapture_(CV_CAP_ANY)  // It has to be opened from the main thread.
     , quit_(false)
+    , glyphValidator_(filename)
 {
   if (!videoCapture_.isOpened()) {
     throw "Unable to open camera";
@@ -71,8 +72,13 @@ void GlyphDetector::Worker(GlyphDetector* instance)
     cvtColor(frame, gray, CV_BGR2GRAY);
 
     blobDetector.Run(gray);
-
-    // TODO: Validate detected blobs and populate the vector with glyphs.
+    int regionCount = blobDetector.GetCandidatesCount();
+    while (regionCount-- > 0) {
+      std::vector<cv::Point2f> vertices = blobDetector.GetVertices(regionCount);
+      if (!instance->glyphValidator_.Validate(frame, vertices)) {
+        continue;
+      }
+    }
   }
 }
 

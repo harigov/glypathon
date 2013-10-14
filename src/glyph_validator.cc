@@ -12,7 +12,7 @@ using namespace std;
 static const size_t MODEL_SIZE = 100;
 static const size_t GLYPH_SIZE = 5;
 
-GlyphValidator::GlyphValidator(const std::string& filename)
+GlyphValidator::GlyphValidator(std::string filename)
 {
   // Expects a file with the following format
   //
@@ -46,7 +46,7 @@ GlyphValidator::~GlyphValidator()
 
 bool GlyphValidator::Validate(cv::Mat image, const vector<cv::Point2f>& detectedPts)
 {
-  if (detectedPts.size() != 4)
+  if (detectedPts.size() != 4 || !AreValidPoints(image, detectedPts))
   {
     // TODO: raise an exception.
     return false;
@@ -57,7 +57,9 @@ bool GlyphValidator::Validate(cv::Mat image, const vector<cv::Point2f>& detected
   modelPts.push_back(cv::Point2f(MODEL_SIZE, 0.0f));
   modelPts.push_back(cv::Point2f(MODEL_SIZE, MODEL_SIZE));
   modelPts.push_back(cv::Point2f(0.0f, MODEL_SIZE));
-  cv::Mat H = cv::findHomography(modelPts, detectedPts);
+
+  vector<cv::Point2f> reorderPts = ReorderPoints(detectedPts);
+  cv::Mat H = cv::findHomography(modelPts, reorderPts);
 
   cv::Mat mapImg(cv::Size(MODEL_SIZE, MODEL_SIZE), CV_8UC1);
 
@@ -81,6 +83,80 @@ bool GlyphValidator::Validate(cv::Mat image, const vector<cv::Point2f>& detected
   cv::imshow("debug", mapImg);
   cout << "Schema is " << glyph_schema << endl;
   return true;
+}
+
+bool GlyphValidator::AreValidPoints(cv::Mat image, const vector<cv::Point2f>& detectedPts)
+{
+  int min_size_factor = 6;
+  int min_width = image.cols / min_size_factor, min_height = image.rows / min_size_factor;
+
+  float minx = numeric_limits<float>::max(), miny = numeric_limits<float>::max(), 
+        maxx = numeric_limits<float>::min(), maxy = numeric_limits<float>::min();
+  for (size_t i = 0; i < detectedPts.size(); ++i)
+  {
+    if (detectedPts[i].x < minx) minx = detectedPts[i].x;
+    if (detectedPts[i].y < miny) miny = detectedPts[i].y;
+    if (detectedPts[i].x > maxx) maxx = detectedPts[i].x;
+    if (detectedPts[i].y > maxy) maxy = detectedPts[i].y;
+  }
+
+  return (maxx - minx) > min_width && (maxy - miny) > min_height;
+}
+
+vector<cv::Point2f> GlyphValidator::ReorderPoints(const vector<cv::Point2f>& detectedPts)
+{
+  // Find clockwise orientation order of points starting with top-left corner.
+  vector<cv::Point2f> reorderedPts;
+  // Find the points that are closest and farthest from the origin. Those will
+  // be the top-left and bottom-right points.
+  cv::Point2f origin(0, 0);
+  cv::Point2f top_left, top_right, bottom_right, bottom_left;
+  double min_dist = std::numeric_limits<double>::max();
+  double max_dist = std::numeric_limits<double>::min();
+  float maxx = 0;
+  for (size_t i = 0; i < detectedPts.size(); ++i)
+  {
+    double dist = cv::norm(detectedPts[i] - origin);
+    if (dist < min_dist) 
+    {
+      top_left = detectedPts[i];
+      min_dist = dist;
+    }
+    if (dist > max_dist) 
+    {
+      bottom_right = detectedPts[i];
+      max_dist = dist;
+    }
+    if (detectedPts[i].x > maxx)
+    {
+      maxx = detectedPts[i].x;
+    }
+  }
+
+  // Finding the closest point to the top-right corner of the image.
+  // This gives top-right and bottom-right corner of the four points.
+  cv::Point2f maxx_pt(maxx, 0);
+  min_dist = std::numeric_limits<double>::max();
+  max_dist = std::numeric_limits<double>::min();
+  for (size_t i = 0; i < detectedPts.size(); ++i)
+  {
+    double dist = cv::norm(detectedPts[i] - maxx_pt);
+    if (dist < min_dist) 
+    {
+      top_right = detectedPts[i];
+      min_dist = dist;
+    }
+    if (dist > max_dist) 
+    {
+      bottom_left = detectedPts[i];
+      max_dist = dist;
+    }
+  }
+  reorderedPts.push_back(top_left);
+  reorderedPts.push_back(top_right);
+  reorderedPts.push_back(bottom_right);
+  reorderedPts.push_back(bottom_left);
+  return reorderedPts;
 }
 
 std::string GlyphValidator::GetGlyphName(const Glyph& glyph)
@@ -144,3 +220,11 @@ cv::Point3f GlyphValidator::Transform(cv::Point3f& pt, cv::Mat H)
   return dest_pts[0];
 }
 
+void PrintPoints(vector<cv::Point2f> pts)
+{
+  cout << "Following points are in the list:" << endl;
+  for (size_t i = 0; i < pts.size(); ++i)
+  {
+    cout << pts[i].x << ", " << pts[i].y << endl;
+  }
+}

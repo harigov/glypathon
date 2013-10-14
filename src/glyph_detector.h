@@ -6,11 +6,12 @@
 #include "opencv2/opencv.hpp"
 
 #include "glyph.h"
+#include "glyph_validator.h"
 
 class GlyphDetector
 {
  public:
-  GlyphDetector();
+  GlyphDetector(std::string filename);
   ~GlyphDetector();
 
   void Stop();
@@ -24,5 +25,6 @@ class GlyphDetector
   std::thread thread_;
   std::mutex mutex_;
   std::vector<Glyph> glyphs_;
+  GlyphValidator glyphValidator_;
 };
 

@@ -14,7 +14,7 @@ int main()
 {
   Configuration::Instance().Load("configuration.txt");
 
-  GlyphDetector detector;
+  GlyphDetector detector("glyph_schema.txt");
   Game game;
 
   vector<Glyph> glyphs;
